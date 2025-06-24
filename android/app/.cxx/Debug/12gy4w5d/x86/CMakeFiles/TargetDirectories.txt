@@ -1,0 +1,2 @@
+C:/Users/tadeo/OneDrive/Escritorio/8 UCQ/Desarrollo de aplicaciones avanzadas/proyecto-segundo-parcial-mauescp/android/app/.cxx/Debug/12gy4w5d/x86/CMakeFiles/edit_cache.dir
+C:/Users/tadeo/OneDrive/Escritorio/8 UCQ/Desarrollo de aplicaciones avanzadas/proyecto-segundo-parcial-mauescp/android/app/.cxx/Debug/12gy4w5d/x86/CMakeFiles/rebuild_cache.dir
