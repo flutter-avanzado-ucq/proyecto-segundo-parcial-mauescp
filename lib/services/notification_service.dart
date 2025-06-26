@@ -16,6 +16,7 @@ class NotificationService {
       iOS: iosSettings,
     );
 
+    // Inicialización de zonas horarias (necesario para notificaciones programadas)
     tz.initializeTimeZones();
 
     await _notificationsPlugin.initialize(
@@ -26,7 +27,7 @@ class NotificationService {
 
   static void _onNotificationResponse(NotificationResponse response) {
     if (response.payload != null) {
-      print('🔔 Payload: ${response.payload}');
+      print('Payload: ${response.payload}');
     }
   }
 
@@ -96,4 +97,12 @@ class NotificationService {
   static Future<void> cancelNotification(int id) async {
     await _notificationsPlugin.cancel(id);
   }
+  
+
+static Future<void> requestExactAlarmPermission() async {
+  if (await Permission.systemAlertWindow.isDenied) {
+    // Solicita el permiso
+    await Permission.systemAlertWindow.request();
+  }
+}
 }

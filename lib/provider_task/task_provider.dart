@@ -1,64 +1,64 @@
 import 'package:flutter/material.dart';
+// Integración Hive: importación de Hive
+import 'package:hive/hive.dart';
+import '../models/task_model.dart';
 import '../services/notification_service.dart';
 
-class Task {
-  String title;
-  bool done;
-  DateTime? dueDate;
-  TimeOfDay? dueTime;
-  int? notificationId;
-
-  Task({
-    required this.title,
-    this.done = false,
-    this.dueDate,
-    this.dueTime,
-    this.notificationId,
-  });
-}
-
 class TaskProvider with ChangeNotifier {
-  final List<Task> _tasks = [];
+  // Integración Hive: acceso a la caja tasksBox
+  Box<Task> get _taskBox => Hive.box<Task>('tasksBox');
 
-  List<Task> get tasks => List.unmodifiable(_tasks);
+  // Integración Hive: obtención de tareas desde Hive
+  List<Task> get tasks => _taskBox.values.toList();
 
-  void addTask(String title, {DateTime? dueDate, TimeOfDay? dueTime, int? notificationId}) {
-    _tasks.insert(0, Task(
+  void addTask(String title, {DateTime? dueDate, TimeOfDay? dueTime, int? notificationId}) async {
+    // Integración Hive: creación y almacenamiento de tarea en Hive
+    final task = Task(
       title: title,
       dueDate: dueDate,
-      dueTime: dueTime,
       notificationId: notificationId,
-    ));
+    );
+
+    await _taskBox.add(task);
     notifyListeners();
   }
 
-  void toggleTask(int index) {
-    _tasks[index].done = !_tasks[index].done;
-    notifyListeners();
-  }
-
-  void removeTask(int index) {
-    final task = _tasks[index];
-    if (task.notificationId != null) {
-      NotificationService.cancelNotification(task.notificationId!);
+  void toggleTask(int index) async {
+    // Integración Hive: actualización de estado en Hive
+    final task = _taskBox.getAt(index);
+    if (task != null) {
+      task.done = !task.done;
+      await task.save();
+      notifyListeners();
     }
-    _tasks.removeAt(index);
-    notifyListeners();
   }
 
-  void updateTask(int index, String newTitle, {DateTime? newDate, TimeOfDay? newTime, int? notificationId}) {
-    final task = _tasks[index];
-
-    // Si ya tenía una notificación previa, cancelar
-    if (task.notificationId != null) {
-      NotificationService.cancelNotification(task.notificationId!);
+  void removeTask(int index) async {
+    // Integración Hive: eliminación de tarea en Hive
+    final task = _taskBox.getAt(index);
+    if (task != null) {
+      if (task.notificationId != null) {
+        await NotificationService.cancelNotification(task.notificationId!);
+      }
+      await task.delete();
+      notifyListeners();
     }
+  }
 
-    _tasks[index].title = newTitle;
-    _tasks[index].dueDate = newDate;
-    _tasks[index].dueTime = newTime;
-    _tasks[index].notificationId = notificationId;
+  void updateTask(int index, String newTitle, {DateTime? newDate, TimeOfDay? newTime, int? notificationId}) async {
+    // Integración Hive: actualización de campos en tarea almacenada en Hive
+    final task = _taskBox.getAt(index);
+    if (task != null) {
+      if (task.notificationId != null) {
+        await NotificationService.cancelNotification(task.notificationId!);
+      }
 
-    notifyListeners();
+      task.title = newTitle;
+      task.dueDate = newDate;
+      task.notificationId = notificationId;
+
+      await task.save();
+      notifyListeners();
+    }
   }
 }
