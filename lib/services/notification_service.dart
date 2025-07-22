@@ -1,12 +1,16 @@
+import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:android_intent_plus/flag.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  /// Inicializa el sistema de notificaciones
   static Future<void> initializeNotifications() async {
     const androidSettings = AndroidInitializationSettings('ic_notification');
     const iosSettings = DarwinInitializationSettings();
@@ -16,7 +20,6 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    // Inicialización de zonas horarias (necesario para notificaciones programadas)
     tz.initializeTimeZones();
 
     await _notificationsPlugin.initialize(
@@ -25,12 +28,14 @@ class NotificationService {
     );
   }
 
+  /// Maneja la respuesta del usuario al tocar la notificación
   static void _onNotificationResponse(NotificationResponse response) {
     if (response.payload != null) {
       print('Payload: ${response.payload}');
     }
   }
 
+  /// Solicita permisos para mostrar notificaciones (iOS y Android 13+)
   static Future<void> requestPermission() async {
     if (await Permission.notification.isDenied ||
         await Permission.notification.isPermanentlyDenied) {
@@ -42,6 +47,7 @@ class NotificationService {
         ?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
+  /// Muestra una notificación inmediata
   static Future<void> showImmediateNotification({
     required String title,
     required String body,
@@ -66,6 +72,7 @@ class NotificationService {
     );
   }
 
+  /// Programa una notificación para una fecha futura
   static Future<void> scheduleNotification({
     required String title,
     required String body,
@@ -73,6 +80,16 @@ class NotificationService {
     required int notificationId,
     String? payload,
   }) async {
+    // Verifica si estás en Android 12+ (API 31+)
+    if (Platform.isAndroid) {
+      final sdkInt = int.tryParse(Platform.version.split(' ').first) ?? 0;
+      if (sdkInt >= 31) {
+        // Abre configuración para permitir alarmas exactas
+        await openExactAlarmPermissionSettings();
+        return; // Salimos para que el usuario pueda habilitarlo manualmente
+      }
+    }
+
     const androidDetails = AndroidNotificationDetails(
       'scheduled_channel',
       'Notificaciones Programadas',
@@ -94,15 +111,19 @@ class NotificationService {
     );
   }
 
+  /// Cancela una notificación específica por ID
   static Future<void> cancelNotification(int id) async {
     await _notificationsPlugin.cancel(id);
   }
-  
 
-static Future<void> requestExactAlarmPermission() async {
-  if (await Permission.systemAlertWindow.isDenied) {
-    // Solicita el permiso
-    await Permission.systemAlertWindow.request();
+  /// Abre los ajustes de Android para permitir "Alarmas exactas"
+  static Future<void> openExactAlarmPermissionSettings() async {
+    if (Platform.isAndroid) {
+      final intent = AndroidIntent(
+        action: 'android.settings.REQUEST_SCHEDULE_EXACT_ALARM',
+        flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
+      );
+      await intent.launch();
+    }
   }
-}
 }

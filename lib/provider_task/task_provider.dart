@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-// Integración Hive: importación de Hive
 import 'package:hive/hive.dart';
 import '../models/task_model.dart';
 import '../services/notification_service.dart';
 
 class TaskProvider with ChangeNotifier {
-  // Integración Hive: acceso a la caja tasksBox
   Box<Task> get _taskBox => Hive.box<Task>('tasksBox');
 
-  // Integración Hive: obtención de tareas desde Hive
-  List<Task> get tasks => _taskBox.values.toList();
+  List<Task> get tasks {
+    final taskList = _taskBox.values.toList();
+    print('Número de tareas recuperadas: ${taskList.length}'); // Log para depuración
+    return taskList;
+  }
 
   void addTask(String title, {DateTime? dueDate, TimeOfDay? dueTime, int? notificationId}) async {
-    // Integración Hive: creación y almacenamiento de tarea en Hive
     final task = Task(
       title: title,
       dueDate: dueDate,
@@ -20,6 +20,7 @@ class TaskProvider with ChangeNotifier {
     );
 
     await _taskBox.add(task);
+    print('Tarea agregada: ${task.title}'); // Log para depuración
     notifyListeners();
   }
 

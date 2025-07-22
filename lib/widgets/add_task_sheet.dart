@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../provider_task/task_provider.dart';
 import '../services/notification_service.dart';
+import '../utils/translations.dart';
+import '../provider_task/language_provider.dart';
 
 class AddTaskSheet extends StatefulWidget {
   const AddTaskSheet({super.key});
@@ -28,9 +30,9 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
       DateTime? finalDueDate;
 
       await NotificationService.showImmediateNotification(
-        title: 'Nueva tarea',
-        body: 'Has agregado la tarea: $text',
-        payload: 'Tarea: $text',
+        title: Translations.get('taskAdded'),
+        body: Translations.get('taskAddedMessage', {'task': text}),
+        payload: '${Translations.get("task")}: $text',
       );
 
       if (_selectedDate != null && _selectedTime != null) {
@@ -45,18 +47,17 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
         notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
         await NotificationService.scheduleNotification(
-          title: 'Recordatorio de tarea',
-          body: 'No olvides: $text',
+          title: Translations.get('taskReminder'),
+          body: '${Translations.get("dontForget")}: $text',
           scheduledDate: finalDueDate,
-          payload: 'Tarea programada: $text para $finalDueDate',
+          payload: '${Translations.get("scheduledTask")}: $text ${Translations.get("for")} $finalDueDate',
           notificationId: notificationId,
         );
       }
 
-      // Integración Hive: guardar la tarea en Provider + Hive
       Provider.of<TaskProvider>(context, listen: false).addTask(
         text,
-        dueDate: finalDueDate ?? _selectedDate, // Integración Hive: se pasa la fecha completa
+        dueDate: finalDueDate ?? _selectedDate,
         notificationId: notificationId,
       );
 
@@ -93,60 +94,67 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-        left: 20,
-        right: 20,
-        top: 20,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('Agregar nueva tarea', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _controller,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Descripción',
-              border: OutlineInputBorder(),
-            ),
-            onSubmitted: (_) => _submit(),
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, _) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            left: 20,
+            right: 20,
+            top: 20,
           ),
-          const SizedBox(height: 12),
-          Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              ElevatedButton(
-                onPressed: _pickDate,
-                child: const Text('Seleccionar fecha'),
+              Text(
+                Translations.get('add_new_task'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
               ),
-              const SizedBox(width: 10),
-              if (_selectedDate != null)
-                Text('${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _controller,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: Translations.get('description'),
+                  border: const OutlineInputBorder(),
+                ),
+                onSubmitted: (_) => _submit(),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: _pickDate,
+                    child: Text(Translations.get('select_date')),
+                  ),
+                  const SizedBox(width: 10),
+                  if (_selectedDate != null)
+                    Text('${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: _pickTime,
+                    child: Text(Translations.get('select_time')),
+                  ),
+                  const SizedBox(width: 10),
+                  Text('${Translations.get("hour")}: '),
+                  if (_selectedTime != null)
+                    Text('${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: _submit,
+                icon: const Icon(Icons.check),
+                label: Text(Translations.get('add_task_button')),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              ElevatedButton(
-                onPressed: _pickTime,
-                child: const Text('Seleccionar hora'),
-              ),
-              const SizedBox(width: 10),
-              const Text('Hora: '),
-              if (_selectedTime != null)
-                Text('${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: _submit,
-            icon: const Icon(Icons.check),
-            label: const Text('Agregar tarea'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

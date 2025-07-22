@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../provider_task/task_provider.dart';
 import '../services/notification_service.dart';
+import '../utils/translations.dart';
+import '../provider_task/language_provider.dart';
 
 class EditTaskSheet extends StatefulWidget {
   final int index;
@@ -44,9 +46,9 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
       }
 
       await NotificationService.showImmediateNotification(
-        title: 'Tarea actualizada',
-        body: 'Has actualizado la tarea: $newTitle',
-        payload: 'Tarea actualizada: $newTitle',
+        title: Translations.get('taskUpdated'),
+        body: Translations.get('taskUpdatedMessage', {'task': newTitle}),
+        payload: '${Translations.get("taskUpdated")}: $newTitle',
       );
 
       if (_selectedDate != null && _selectedTime != null) {
@@ -61,19 +63,18 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
         notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
         await NotificationService.scheduleNotification(
-          title: 'Recordatorio de tarea actualizada',
-          body: 'No olvides: $newTitle',
+          title: Translations.get('taskReminderUpdated'),
+          body: '${Translations.get("dontForget")}: $newTitle',
           scheduledDate: finalDueDate,
-          payload: 'Tarea actualizada: $newTitle para $finalDueDate',
+          payload: '${Translations.get("taskUpdated")}: $newTitle ${Translations.get("for")} $finalDueDate',
           notificationId: notificationId,
         );
       }
 
-      // Integración Hive: actualizar la tarea en Provider + Hive
       Provider.of<TaskProvider>(context, listen: false).updateTask(
         widget.index,
         newTitle,
-        newDate: finalDueDate ?? _selectedDate, // Integración Hive: se pasa la fecha completa
+        newDate: finalDueDate ?? _selectedDate,
         notificationId: notificationId,
       );
 
@@ -110,60 +111,67 @@ class _EditTaskSheetState extends State<EditTaskSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-        left: 20,
-        right: 20,
-        top: 20,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('Editar tarea', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _controller,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Título',
-              border: OutlineInputBorder(),
-            ),
-            onSubmitted: (_) => _submit(),
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, _) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            left: 20,
+            right: 20,
+            top: 20,
           ),
-          const SizedBox(height: 12),
-          Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              ElevatedButton(
-                onPressed: _pickDate,
-                child: const Text('Cambiar fecha'),
+              Text(
+                Translations.get('edit_task_title'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
               ),
-              const SizedBox(width: 10),
-              if (_selectedDate != null)
-                Text('${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _controller,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: Translations.get('title'),
+                  border: const OutlineInputBorder(),
+                ),
+                onSubmitted: (_) => _submit(),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: _pickDate,
+                    child: Text(Translations.get('changeDate')),
+                  ),
+                  const SizedBox(width: 10),
+                  if (_selectedDate != null)
+                    Text('${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: _pickTime,
+                    child: Text(Translations.get('changeTime')),
+                  ),
+                  const SizedBox(width: 10),
+                  Text('${Translations.get("hour")}: '),
+                  if (_selectedTime != null)
+                    Text('${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: _submit,
+                icon: const Icon(Icons.check),
+                label: Text(Translations.get('saveChanges')),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              ElevatedButton(
-                onPressed: _pickTime,
-                child: const Text('Cambiar hora'),
-              ),
-              const SizedBox(width: 10),
-              const Text('Hora: '),
-              if (_selectedTime != null)
-                Text('${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: _submit,
-            icon: const Icon(Icons.check),
-            label: const Text('Guardar cambios'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
