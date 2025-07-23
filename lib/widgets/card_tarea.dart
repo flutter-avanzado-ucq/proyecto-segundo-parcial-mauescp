@@ -5,6 +5,7 @@ import '../widgets/edit_task_sheet.dart';
 import '../utils/translations.dart';
 import 'package:provider/provider.dart';
 import '../provider_task/language_provider.dart';
+import '../provider_task/holiday_provider.dart';
 
 class TaskCard extends StatelessWidget {
   final String title;
@@ -25,6 +26,65 @@ class TaskCard extends StatelessWidget {
     required this.index,
     this.dueDate,
   });
+
+  Widget _buildDateInfo(BuildContext context, DateTime date) {
+    final holidayProvider = Provider.of<HolidayProvider>(context);
+    final isHoliday = holidayProvider.isHoliday(date);
+    final holidayName = holidayProvider.getHolidayName(date);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              Text(
+                '${Translations.get("due")}: ${DateFormat('dd/MM/yyyy').format(date)}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              Text(
+                '${Translations.get("time")}: ${DateFormat('HH:mm').format(date)}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          if (isHoliday) ...[
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.red.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.celebration,
+                    size: 16,
+                    color: Colors.red.shade400,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    Translations.get('holiday_label', {'name': holidayName ?? ''}),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.red.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,24 +137,7 @@ class TaskCard extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  if (dueDate != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          Text(
-                            '${Translations.get("due")}: ${DateFormat('dd/MM/yyyy').format(dueDate!)}',
-                            style: const TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                          Text(
-                            '${Translations.get("time")}: ${DateFormat('HH:mm').format(dueDate!)}',
-                            style: const TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ),
+                  if (dueDate != null) _buildDateInfo(context, dueDate!),
                 ],
               ),
               trailing: Row(

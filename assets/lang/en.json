@@ -36,5 +36,14 @@
     "weather_error": "Error loading weather",
     "temperature": "Temperature: {temp}°C",
     "weather_description": "Weather: {description}",
-    "loading_weather": "Loading weather..."
+    "loading_weather": "Loading weather...",
+    "holidays_error": "Error loading holidays",
+    "loading_holidays": "Loading holidays...",
+    "next_holiday": "Next holiday: {name} - {date}",
+    "no_holidays": "No upcoming holidays",
+    "holiday_today": "It's today!",
+    "holiday_tomorrow": "It's tomorrow!",
+    "days_until_holiday": "{days} days remaining",
+    "holiday_label": "🎉 Holiday",
+    "selected_holiday_date": "{name} is a holiday!"
 }

@@ -36,5 +36,15 @@
     "weather_error": "Error al cargar el clima",
     "temperature": "Temperatura: {temp}°C",
     "weather_description": "Clima: {description}",
-    "loading_weather": "Cargando clima..."
+    "loading_weather": "Cargando clima...",
+    "holidays": "Días Feriados",
+    "holidays_error": "Error al cargar días feriados",
+    "loading_holidays": "Cargando días feriados...",
+    "next_holiday": "Próximo feriado: {name} - {date}",
+    "no_holidays": "No hay feriados próximos",
+    "holiday_today": "¡Es hoy!",
+    "holiday_tomorrow": "¡Es mañana!",
+    "days_until_holiday": "Faltan {days} días",
+    "holiday_label": "🎉 Día feriado",
+    "selected_holiday_date": "¡{name} es un día feriado!"
 }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../provider_task/task_provider.dart';
-import '../services/notification_service.dart';
+import '../provider_task/holiday_provider.dart';
 import '../utils/translations.dart';
-import '../provider_task/language_provider.dart';
+import '../models/task_model.dart';
+import 'package:intl/intl.dart';
 
 class AddTaskSheet extends StatefulWidget {
   const AddTaskSheet({super.key});
@@ -13,78 +14,104 @@ class AddTaskSheet extends StatefulWidget {
 }
 
 class _AddTaskSheetState extends State<AddTaskSheet> {
-  final _controller = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
 
   @override
   void dispose() {
-    _controller.dispose();
+    _titleController.dispose();
     super.dispose();
   }
 
-  void _submit() async {
-    final text = _controller.text.trim();
-    if (text.isNotEmpty) {
-      int? notificationId;
-      DateTime? finalDueDate;
-
-      await NotificationService.showImmediateNotification(
-        title: Translations.get('taskAdded'),
-        body: Translations.get('taskAddedMessage', {'task': text}),
-        payload: '${Translations.get("task")}: $text',
-      );
-
-      if (_selectedDate != null && _selectedTime != null) {
-        finalDueDate = DateTime(
-          _selectedDate!.year,
-          _selectedDate!.month,
-          _selectedDate!.day,
-          _selectedTime!.hour,
-          _selectedTime!.minute,
-        );
-
-        notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
-
-        await NotificationService.scheduleNotification(
-          title: Translations.get('taskReminder'),
-          body: '${Translations.get("dontForget")}: $text',
-          scheduledDate: finalDueDate,
-          payload: '${Translations.get("scheduledTask")}: $text ${Translations.get("for")} $finalDueDate',
-          notificationId: notificationId,
-        );
-      }
-
-      Provider.of<TaskProvider>(context, listen: false).addTask(
-        text,
-        dueDate: finalDueDate ?? _selectedDate,
-        notificationId: notificationId,
-      );
-
-      Navigator.pop(context);
-    }
-  }
-
-  Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
+  Future<void> _selectDate(BuildContext context) async {
+    final holidayProvider = Provider.of<HolidayProvider>(context, listen: false);
+    final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: now,
-      firstDate: now,
-      lastDate: DateTime(now.year + 5),
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Colors.pinkAccent,
+              onPrimary: Colors.white,
+              surface: Theme.of(context).colorScheme.surface,
+              onSurface: Theme.of(context).colorScheme.onSurface,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.pinkAccent,
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
+
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
       });
+
+      // Verificar si es un día feriado
+      if (holidayProvider.isHoliday(picked)) {
+        final holidayName = holidayProvider.getHolidayName(picked);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.celebration, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      Translations.get('selected_holiday_date', {'name': holidayName ?? ''}),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.red.shade400,
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        }
+      }
     }
   }
 
-  Future<void> _pickTime() async {
-    final picked = await showTimePicker(
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.now(),
+      initialTime: _selectedTime ?? TimeOfDay.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Colors.pinkAccent,
+              onPrimary: Colors.white,
+              surface: Theme.of(context).colorScheme.surface,
+              onSurface: Theme.of(context).colorScheme.onSurface,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.pinkAccent,
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
+
     if (picked != null) {
       setState(() {
         _selectedTime = picked;
@@ -92,69 +119,168 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<LanguageProvider>(
-      builder: (context, languageProvider, _) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-            left: 20,
-            right: 20,
-            top: 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                Translations.get('add_new_task'),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _controller,
-                autofocus: true,
-                decoration: InputDecoration(
-                  labelText: Translations.get('description'),
-                  border: const OutlineInputBorder(),
-                ),
-                onSubmitted: (_) => _submit(),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  ElevatedButton(
-                    onPressed: _pickDate,
-                    child: Text(Translations.get('select_date')),
-                  ),
-                  const SizedBox(width: 10),
-                  if (_selectedDate != null)
-                    Text('${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  ElevatedButton(
-                    onPressed: _pickTime,
-                    child: Text(Translations.get('select_time')),
-                  ),
-                  const SizedBox(width: 10),
-                  Text('${Translations.get("hour")}: '),
-                  if (_selectedTime != null)
-                    Text('${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'),
-                ],
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: _submit,
-                icon: const Icon(Icons.check),
-                label: Text(Translations.get('add_task_button')),
-              ),
-            ],
+  void _submitForm() {
+    if (_formKey.currentState!.validate()) {
+      if (_selectedDate == null || _selectedTime == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(Translations.get('select_date_time')),
+            backgroundColor: Colors.red.shade400,
           ),
         );
-      },
+        return;
+      }
+
+      final DateTime dueDate = DateTime(
+        _selectedDate!.year,
+        _selectedDate!.month,
+        _selectedDate!.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      );
+
+      final task = Task(
+        title: _titleController.text.trim(),
+        done: false,
+        dueDate: dueDate,
+      );
+
+      Provider.of<TaskProvider>(context, listen: false).addTask(task);
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final holidayProvider = Provider.of<HolidayProvider>(context);
+    final bool isHoliday = _selectedDate != null && holidayProvider.isHoliday(_selectedDate!);
+    final String? holidayName = _selectedDate != null ? holidayProvider.getHolidayName(_selectedDate!) : null;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              Translations.get('add_task'),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _titleController,
+              decoration: InputDecoration(
+                labelText: Translations.get('task_title'),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                prefixIcon: const Icon(Icons.task_alt),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return Translations.get('title_required');
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _selectDate(context),
+                    icon: const Icon(Icons.calendar_today),
+                    label: Text(
+                      _selectedDate == null
+                          ? Translations.get('select_date')
+                          : DateFormat('dd/MM/yyyy').format(_selectedDate!),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _selectTime(context),
+                    icon: const Icon(Icons.access_time),
+                    label: Text(
+                      _selectedTime == null
+                          ? Translations.get('select_time')
+                          : _selectedTime!.format(context),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (isHoliday && holidayName != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.celebration, color: Colors.red.shade400),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        holidayName,
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _submitForm,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.pinkAccent,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                Translations.get('add'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

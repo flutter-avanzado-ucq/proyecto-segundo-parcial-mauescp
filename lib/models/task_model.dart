@@ -14,13 +14,18 @@ class Task extends HiveObject {
   DateTime? dueDate;
 
   @HiveField(3)
+  String? key;
+
+  @HiveField(4)
   int? notificationId;
 
   Task({
     required this.title,
-    this.done = false,
+    required this.done,
     this.dueDate,
+    this.key,
     this.notificationId,
-  });
+  }) {
+    key = key ?? DateTime.now().millisecondsSinceEpoch.toString();
+  }
 }
-

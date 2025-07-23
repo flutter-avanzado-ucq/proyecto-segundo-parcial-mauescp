@@ -7,116 +7,136 @@ import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
 
 class NotificationService {
-  static final FlutterLocalNotificationsPlugin _notificationsPlugin =
+  static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
 
-  /// Inicializa el sistema de notificaciones
   static Future<void> initializeNotifications() async {
-    const androidSettings = AndroidInitializationSettings('ic_notification');
-    const iosSettings = DarwinInitializationSettings();
+    tz.initializeTimeZones();
 
-    const settings = InitializationSettings(
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+    
+    const InitializationSettings settings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
     );
 
-    tz.initializeTimeZones();
-
-    await _notificationsPlugin.initialize(
+    await _notifications.initialize(
       settings,
-      onDidReceiveNotificationResponse: _onNotificationResponse,
+      onDidReceiveNotificationResponse: (NotificationResponse details) {
+        // Manejar la respuesta de la notificación si es necesario
+      },
     );
   }
 
-  /// Maneja la respuesta del usuario al tocar la notificación
-  static void _onNotificationResponse(NotificationResponse response) {
-    if (response.payload != null) {
-      print('Payload: ${response.payload}');
-    }
-  }
-
-  /// Solicita permisos para mostrar notificaciones (iOS y Android 13+)
   static Future<void> requestPermission() async {
-    if (await Permission.notification.isDenied ||
-        await Permission.notification.isPermanentlyDenied) {
-      await Permission.notification.request();
+    if (Platform.isAndroid) {
+      final status = await Permission.notification.request();
+      if (status.isGranted) {
+        print('Permisos de notificación concedidos');
+      }
+    } else if (Platform.isIOS) {
+      final settings = await _notifications.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>()?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      if (settings ?? false) {
+        print('Permisos de notificación iOS concedidos');
+      }
     }
-
-    await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
-  /// Muestra una notificación inmediata
   static Future<void> showImmediateNotification({
     required String title,
     required String body,
     String? payload,
   }) async {
-    const androidDetails = AndroidNotificationDetails(
-      'instant_channel',
-      'Notificaciones Instantáneas',
-      channelDescription: 'Canal para notificaciones inmediatas',
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'immediate_notifications',
+      'Immediate Notifications',
+      channelDescription: 'For immediate notifications',
       importance: Importance.high,
       priority: Priority.high,
     );
 
-    const details = NotificationDetails(android: androidDetails);
+    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
 
-    await _notificationsPlugin.show(
-      DateTime.now().millisecondsSinceEpoch.remainder(100000),
+    const NotificationDetails notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _notifications.show(
+      DateTime.now().millisecond,
       title,
       body,
-      details,
+      notificationDetails,
       payload: payload,
     );
   }
 
-  /// Programa una notificación para una fecha futura
   static Future<void> scheduleNotification({
     required String title,
     required String body,
     required DateTime scheduledDate,
-    required int notificationId,
     String? payload,
+    required int notificationId,
   }) async {
-    // Verifica si estás en Android 12+ (API 31+)
     if (Platform.isAndroid) {
-      final sdkInt = int.tryParse(Platform.version.split(' ').first) ?? 0;
+      // Obtiene el SDK de Android de forma confiable
+      final sdkInt = int.tryParse(
+        Platform.version.split(' ').first
+      ) ?? 0;
       if (sdkInt >= 31) {
-        // Abre configuración para permitir alarmas exactas
         await openExactAlarmPermissionSettings();
-        return; // Salimos para que el usuario pueda habilitarlo manualmente
       }
     }
 
-    const androidDetails = AndroidNotificationDetails(
-      'scheduled_channel',
-      'Notificaciones Programadas',
-      channelDescription: 'Canal para recordatorios de tareas',
+    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'task_reminders',
+      'Task Reminders',
+      channelDescription: 'Notifications for task reminders',
       importance: Importance.high,
       priority: Priority.high,
     );
 
-    const details = NotificationDetails(android: androidDetails);
+    final DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
 
-    await _notificationsPlugin.zonedSchedule(
+    final NotificationDetails notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _notifications.zonedSchedule(
       notificationId,
       title,
       body,
       tz.TZDateTime.from(scheduledDate, tz.local),
-      details,
+      notificationDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
       payload: payload,
     );
   }
 
-  /// Cancela una notificación específica por ID
   static Future<void> cancelNotification(int id) async {
-    await _notificationsPlugin.cancel(id);
+    await _notifications.cancel(id);
   }
 
-  /// Abre los ajustes de Android para permitir "Alarmas exactas"
   static Future<void> openExactAlarmPermissionSettings() async {
     if (Platform.isAndroid) {
       final intent = AndroidIntent(
