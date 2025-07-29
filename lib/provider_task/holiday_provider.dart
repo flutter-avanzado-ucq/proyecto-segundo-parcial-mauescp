@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/holidays_service.dart';
 
+
 class HolidayProvider with ChangeNotifier {
   final _holidayService = HolidayService();
   List<Holiday>? _holidays;

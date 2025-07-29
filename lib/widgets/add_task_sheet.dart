@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../provider_task/task_provider.dart';
-import '../provider_task/holiday_provider.dart';
+import 'package:flutter_animaciones_notificaciones/provider_task/holiday_provider.dart';
 import '../utils/translations.dart';
 import '../models/task_model.dart';
 import 'package:intl/intl.dart';

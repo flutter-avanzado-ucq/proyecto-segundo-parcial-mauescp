@@ -27,4 +27,8 @@ class LanguageProvider with ChangeNotifier {
     await Translations.load(_currentLanguage);
     notifyListeners();
   }
+
+  String getTranslation(String key) {
+    return Translations.translate(key, _currentLanguage);
+  }
 }

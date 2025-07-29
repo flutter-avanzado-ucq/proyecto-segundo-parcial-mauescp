@@ -4,8 +4,8 @@ import 'package:intl/intl.dart';
 import '../widgets/edit_task_sheet.dart';
 import '../utils/translations.dart';
 import 'package:provider/provider.dart';
-import '../provider_task/language_provider.dart';
-import '../provider_task/holiday_provider.dart';
+import 'package:flutter_animaciones_notificaciones/provider_task/language_provider.dart';
+import 'package:flutter_animaciones_notificaciones/provider_task/holiday_provider.dart';
 
 class TaskCard extends StatelessWidget {
   final String title;
@@ -41,13 +41,23 @@ class TaskCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 4,
             children: [
-              Text(
-                '${Translations.get("due")}: ${DateFormat('dd/MM/yyyy').format(date)}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              Consumer<LanguageProvider>(
+                builder: (context, lang, _) {
+                  final dueLabel = lang.getTranslation('due');
+                  return Text(
+                    '$dueLabel: ${DateFormat('dd/MM/yyyy').format(date)}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  );
+                },
               ),
-              Text(
-                '${Translations.get("time")}: ${DateFormat('HH:mm').format(date)}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              Consumer<LanguageProvider>(
+                builder: (context, lang, _) {
+                  final timeLabel = lang.getTranslation('time');
+                  return Text(
+                    '$timeLabel: ${DateFormat('HH:mm').format(date)}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  );
+                },
               ),
             ],
           ),

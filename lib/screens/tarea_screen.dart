@@ -6,7 +6,7 @@ import '../widgets/header.dart';
 import '../widgets/add_task_sheet.dart';
 import '../provider_task/task_provider.dart';
 import '../provider_task/theme_provider.dart';
-import '../provider_task/language_provider.dart';
+import 'package:flutter_animaciones_notificaciones/provider_task/language_provider.dart';
 import '../utils/translations.dart';
 
 class TaskScreen extends StatefulWidget {

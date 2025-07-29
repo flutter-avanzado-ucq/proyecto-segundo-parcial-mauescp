@@ -24,4 +24,9 @@ class Translations {
   }
 
   static String get currentLanguage => _currentLanguage;
+
+  static String translate(String key, String currentLanguage) {
+    // Example implementation: fallback to get() for now
+    return get(key);
+  }
 }

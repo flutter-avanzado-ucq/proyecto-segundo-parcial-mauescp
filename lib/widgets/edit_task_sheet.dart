@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../provider_task/task_provider.dart';
 import '../services/notification_service.dart';
 import '../utils/translations.dart';
-import '../provider_task/language_provider.dart';
+import 'package:flutter_animaciones_notificaciones/provider_task/language_provider.dart';
 
 class EditTaskSheet extends StatefulWidget {
   final int index;
