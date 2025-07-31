@@ -8,13 +8,13 @@ class Holiday {
 
   Holiday({
     required this.localName,
-    required this.date,
+    required this.date, required String name, required String countryCode,
   });
 
   factory Holiday.fromJson(Map<String, dynamic> json) {
     return Holiday(
       localName: json['localName'],
-      date: DateTime.parse(json['date']),
+      date: DateTime.parse(json['date']), name: '', countryCode: '',
     );
   }
 }
